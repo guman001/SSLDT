@@ -1,20 +1,12 @@
 # SSLDT
-Sign and Send Large Dictionaries via TCP socket (= SSLDT)
+Sign/Verify and Send/Receive Large Dictionaries via TCP socket (= SSLDT)
 
 The following needs in a project led me to write this class and share it:
 1) Digitally sign a Python dictionary
 2) Send a large signed dictionary via TCP socket
 
-Sign and send large dictionary:
-import socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-address = (<ip : string> , <port : integer>)
-sock.connect(assress)
-c = Communication() # An object of Communication Class
-message = <a large dictionary>
-path_to_privatekey = <path to private key of sender>
-result = c.send_please(message, path_to_privatekey, sock, address)
-if result:
-  print 'Successful'
- else:
-  print 'Failure'
+How dictionary is signed and verrified? 
+Dictionary is ordered by keys alphabetically. The ordered dictionary is converted to json dictionary. Then the string is digitally signed. Signature is encoded by Base64 and added to "signature" key of the original dictionary.
+On receiving, the received message is dumped and "signature" key is omitted. After that, dictionary is ordered by keys alphabetiacally and converted to json string. Now, message is ready for verification.
+
+How large dictionary is sent and received?
