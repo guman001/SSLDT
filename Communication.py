@@ -6,19 +6,20 @@ import sys
 import json
 import base64
 import cryptography.exceptions
-from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 
 class Communication:
 
-    def __init__(self, verbose = True, buf_size = 56000):
+    def __init__(self, verbose = True, flag = 'EOMEOM',buf_size = 60):
         self.verbose = verbose
         if buf_size > 56000:
             buf_size = 56000
         self.buf_size = buf_size
+        self.flag = flag
 
     def error_handler(self, errorCode, errorMessage):
         if self.verbose:
@@ -42,6 +43,14 @@ class Communication:
             self.error_handler('Communication_:_load_key_please' , sys.exc_info())
             return False
 
+    def add_flag(self, message):
+        try:
+            message = message + self.flag
+            return message
+        except:
+            self.error_handler('Communication_:_add_flag_please' , sys.exc_info())
+            return False
+
     def encode_please(self, data): #Base64 encoder
         try:
             codedData = base64.b64encode(data)
@@ -58,10 +67,15 @@ class Communication:
             self.error_handler('Communication_:_decode_please', sys.exc_info())
             return False
 
-    def verify_please(self, payload_contents, public_key):
+    def verify_please(self, payload_contents, path_to_public_key):
         try:
+            public_key = self.load_key_please(path_to_public_key, 'pu')
+            if public_key == False:
+                return False
             payload_contents = json.loads(payload_contents)
             signature = self.decode_please(payload_contents['signature'])
+            if signature == False:
+                return False
             del payload_contents['signature']
             rMessage = payload_contents
             aux = payload_contents.keys()
@@ -90,8 +104,11 @@ class Communication:
             self.error_handler('Communication_:_verify_please', sys.exc_info())
             return False
 
-    def sign_please(self, message, private_key):
+    def sign_please(self, message, private_key_path):
         try:
+            private_key = self.load_key_please(private_key_path, 'pr')
+            if private_key == False:
+                return False
             message = json.dumps(message)
             signature = private_key.sign(
                 message,
@@ -103,66 +120,69 @@ class Communication:
             )
             message = json.loads(message)
             signature = self.encode_please(signature)
+            if signature == False:
+                return False
             message['signature'] = signature
-            message = json.dumps(message)
             return message
         except:
             self.error_handler('Communication_:_sign_please', sys.exc_info())
             return False
 
-    def pad_please(self, message):
-        try:
-            message = message + '}' * (self.buf_size - len(message))
-            return message
-        except:
-            self.error_handler('Communication_:_pad_please', sys.exc_info())
-            return False
-
-    def depad_please(self, message):
-        try:
-            message = message.strip('}') + '}'
-            return message
-        except:
-            self.error_handler('Communication_:_depad_please', sys.exc_info())
-            return False
-
-    def recvall_please(self, sock):
+    def recv_a_chunk(self, con):
         # Helper function to recv n bytes or return None if EOF is hit
         try:
             data = ''
             while len(data) < self.buf_size:
-                packet = sock.recv(self.buf_size - len(data))
-                if not packet:
-                    return None
+                packet = con.recv(self.buf_size - len(data))
                 data += packet
-            if data[-1] == '}':
-                data = self.depad_please(data)
+                if not packet:
+                    return data
             return data
         except:
-            self.error_handler('Communication_:_recvall_please', sys.exc_info())
+            self.error_handler('Communication_:_recv_a_chunk', sys.exc_info())
             return False
 
-    def send_please(self, message, private_key_path, s, adres_tuple, large = True):
+    def send_please(self, message, s, adres_tuple):
         try:
-            if large:
-                private_key = self.load_key_please(private_key_path , 'pr')
-                message = self.sign_please(message, private_key)
-                s.connect(adres_tuple)
-                i = 0
-                while True:
-                    x = message[i*self.buf_size : (i+1)*self.buf_size]
-                    lx = len(x)
-                    if len(x) < self.buf_size: #padding required
-                        x = self.pad_please(x)
-                    s.sendall(x)
-                    if self.buf_size > lx:
-                        break
-            else:
-                private_key = self.load_key_please(private_key_path , 'pr')
-                message = self.sign_please(message, private_key)
-                s.connect(adres_tuple)
-                s.sendall(message)
+            message = json.dumps(message)
+            message = self.add_flag(message)
+            if message == False:
+                return False
+            s.connect(adres_tuple)
+            i = 0
+            while (i*self.buf_size) < len(message):
+                x = message[i*self.buf_size : (i+1)*self.buf_size]
+                s.sendall(x)
+                i = i + 1
             return True
         except:
             self.error_handler('Communication_:_send_please', sys.exc_info())
+            return False
+
+    def recv_the_rest_chunks(self,con, message):
+        try:
+            while True:
+                nmessage = self.recv_a_chunk(con)
+                if nmessage == False:
+                    return False
+                message = message + nmessage
+                if self.flag == message[-len(self.flag):]:
+                    break
+            message = message.strip(self.flag) #removing flag
+            return message
+        except:
+            self.error_handler('Communication_:_receive_other_chunks', sys.exc_info())
+            return False
+
+    def receive_please(self, con):
+        try:
+            message = self.recv_a_chunk(con)
+            if message == False:
+                return False
+            message = self.recv_the_rest_chunks(con, message)
+            if message == False:
+                return False
+            return message
+        except:
+            self.error_handler('Communication_:_receive_please', sys.exc_info())
             return False
