@@ -72,6 +72,7 @@ class Communication:
             public_key = self.load_key_please(path_to_public_key, 'pu')
             if public_key == False:
                 return False
+            payload_contents = json.loads(payload_contents)
             signature = self.decode_please(payload_contents['signature'])
             if signature == False:
                 return False
@@ -141,13 +142,14 @@ class Communication:
             self.error_handler('Communication_:_recv_a_chunk', sys.exc_info())
             return False
 
-    def send_please(self, message, s, adres_tuple):
+    def send_please(self, message, s, adres_tuple, handshaking = False):
         try:
             message = json.dumps(message)
             message = self.add_flag(message)
             if message == False:
                 return False
-            s.connect(adres_tuple)
+            if handshaking: #Handshaking required otherwise connection is established.
+                s.connect(adres_tuple) #s is socket object otherwise s is connection
             i = 0
             while (i*self.buf_size) < len(message):
                 x = message[i*self.buf_size : (i+1)*self.buf_size]
@@ -181,7 +183,6 @@ class Communication:
             message = self.recv_the_rest_chunks(con, message)
             if message == False:
                 return False
-            message = json.dumps(message)
             return message
         except:
             self.error_handler('Communication_:_receive_please', sys.exc_info())
