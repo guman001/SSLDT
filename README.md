@@ -14,3 +14,5 @@ How large dictionary is sent and received?
 
 Dictionary is signed and converted to json string. Json string is divided to chunks. Each chunk is sent seperately and the last chunk is marked by a flag in the end. 
 On receiving, all chunks are mereged and flag is removed.
+
+https://guman001.github.io/SSLDT/
