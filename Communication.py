@@ -180,9 +180,10 @@ class Communication:
             message = self.recv_a_chunk(con)
             if message == False:
                 return False
-            message = self.recv_the_rest_chunks(con, message)
-            if message == False:
-                return False
+            if not(self.flag == message[-len(self.flag):]):
+                message = self.recv_the_rest_chunks(con, message)
+                if message == False:
+                    return False
             return message
         except:
             self.error_handler('Communication_:_receive_please', sys.exc_info())
