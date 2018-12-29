@@ -72,7 +72,7 @@ class Communication:
             public_key = self.load_key_please(path_to_public_key, 'pu')
             if public_key == False:
                 return False
-            payload_contents = json.loads(payload_contents)
+            #payload_contents = json.loads(payload_contents)
             signature = self.decode_please(payload_contents['signature'])
             if signature == False:
                 return False
@@ -184,6 +184,7 @@ class Communication:
                 if message == False:
                     return False
             message = message.strip(self.flag) #removing flag
+            message = json.loads(message)
             return message
         except:
             self.error_handler('Communication_:_receive_please', sys.exc_info())
