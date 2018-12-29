@@ -169,7 +169,6 @@ class Communication:
                 message = message + nmessage
                 if self.flag == message[-len(self.flag):]:
                     break
-            message = message.strip(self.flag) #removing flag
             return message
         except:
             self.error_handler('Communication_:_receive_other_chunks', sys.exc_info())
@@ -184,6 +183,7 @@ class Communication:
                 message = self.recv_the_rest_chunks(con, message)
                 if message == False:
                     return False
+            message = message.strip(self.flag) #removing flag
             return message
         except:
             self.error_handler('Communication_:_receive_please', sys.exc_info())
