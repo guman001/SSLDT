@@ -45,7 +45,7 @@ while True:
     thrdObj = MyThread(p, ip, comObj)
     thrdObj.start()
     print 'A thread is listening on new port : ' , p
-    ret = comObj.send_please(reply, con, adres_tuple)
+    ret = comObj.send_please(reply, con)
     if ret == False:
         print 'There was an error in replying to ',adr
         continue
