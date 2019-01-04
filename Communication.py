@@ -142,7 +142,7 @@ class Communication:
             self.error_handler('Communication_:_recv_a_chunk', sys.exc_info())
             return False
 
-    def send_please(self, message, s, adres_tuple, handshaking = False):
+    def send_please(self, message, s, adres_tuple ='' , handshaking = False):
         try:
             message = json.dumps(message)
             message = self.add_flag(message)
