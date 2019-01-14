@@ -43,6 +43,24 @@ class Communication:
             self.error_handler('Communication_:_load_key_please' , sys.exc_info())
             return False
 
+    def padd_please(self, message):
+        try:
+            messageLength = len(message)
+            paddLength = (self.buf_size - (messageLength + len(self.flag))%self.buf_size)
+            message = message + '}'*paddLength
+            return message
+        except:
+            self.error_handler('Communication_:_padd_please' , sys.exc_info())
+            return False
+
+    def depadd_please(self, message):
+        try:
+            message =  message.strip('}') + '}'
+            return message
+        except:
+            self.error_handler('Communication_:_depadd_please', sys.exc_info())
+            return False
+
     def add_flag(self, message):
         try:
             message = message + self.flag
@@ -145,6 +163,7 @@ class Communication:
     def send_please(self, message, s, adres_tuple ='' , handshaking = False):
         try:
             message = json.dumps(message)
+            message = self.padd_please(message)
             message = self.add_flag(message)
             if message == False:
                 return False
@@ -184,6 +203,7 @@ class Communication:
                 if message == False:
                     return False
             message = message.strip(self.flag) #removing flag
+            message = self.depadd_please(message)
             message = json.loads(message)
             return message
         except:
